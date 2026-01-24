@@ -3,14 +3,15 @@ import Breadcrumbs from "@/app/ui/invoices/breadcrumbs";
 import { fetchInvoiceById, fetchCustomers } from "@/app/lib/data";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: 'Edit Invoice'
 }
 
-export default async function Page(props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
-  const id = params.id;
+export const dynamic = 'force-dynamic';
+
+async function EditInvoiceForm({ id }: { id: string }) {
   const [invoice, customers] = await Promise.all([
     fetchInvoiceById(id),
     fetchCustomers(),
@@ -20,9 +21,16 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     notFound();
   }
 
-  return(
+  return <Form invoice={invoice} customers={customers} />;
+}
+
+export default async function Page(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  const id = params.id;
+
+  return (
     <main>
-      <Breadcrumbs 
+      <Breadcrumbs
         breadcrumbs={[
           { label: 'Invoices', href: '/dashboard/invoices' },
           {
@@ -32,7 +40,9 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
           },
         ]}
       />
-      <Form invoice={invoice} customers={customers} />
+      <Suspense fallback={<div>Loading...</div>}>
+        <EditInvoiceForm id={id} />
+      </Suspense>
     </main>
   )
 }
